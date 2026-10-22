@@ -1,0 +1,50 @@
+# Build and package
+
+Runtime source is plain JavaScript ES modules. There is no npm install step and no production dependency tree.
+
+## Checks
+
+On a development machine with GJS:
+
+```sh
+gjs -m tests/run.js
+gjs -m tests/gjs-storage.js
+eslint extension.js prefs.js lib tests
+glib-compile-schemas --strict --dry-run schemas
+```
+
+`tests/run.js` is pure portable logic and can alternatively run with a development-only Node.js installation:
+
+```sh
+npm test
+npm run lint
+```
+
+The GJS storage/image integration tests require GJS, Gio and GdkPixbuf. They operate in a temporary test directory, not the owner’s extension data. They check actual atomic private writes, round trips, corruption preservation, attachment cleanup and image decoding/re-encoding. They were **not runnable** in the initial build environment.
+
+## Build
+
+The development-only packager needs Python 3’s standard library and `glib-compile-schemas`:
+
+```sh
+python3 tools/package.py
+```
+
+If `gnome-extensions` is available, it invokes **`gnome-extensions pack`** with the runtime asset directories. Otherwise it produces the equivalent root-layout ZIP with Python’s standard `zipfile`, after compiling the schema. Python is not included in or needed by the installed extension.
+
+Output:
+
+```text
+dist/ai-pop-down-extension@edjenn1998.github.io.shell-extension.zip
+dist/SHA256SUMS
+```
+
+The builder validates checksums, UUID, shell-version, clipboard description, absence of website-managed version/session fields and **exact ZIP contents**. Runtime files only: metadata, extension, preferences, stylesheet, lib modules, icon, schema XML/compiled schema and license texts. No tests, docs, build scripts, package.json, caches, local settings, screenshots or source archives enter the ZIP. The XML remains included for GNOME review.
+
+Install the resulting file with `gnome-extensions install /absolute/path/to/zip`. This is separate from building: do not install into or restart someone’s active desktop without permission. For updates, use the Extensions UI or an explicit owner-approved force-reinstall, not a silent script.
+
+## Release
+
+After passing the target desktop checklist, update the honest validation record. Inspect `git status`, `git diff`, recent commits, and staged files for secrets/artifacts. Create a public `edjenn1998/ai-pop-down-extension` repository only after owner confirmation. Commit intended source/docs/tests, push without force, then create **v0.1.0 as a prerelease** with the installable ZIP, SHA256SUMS and `docs/RELEASE-NOTES.md` as release notes. Preserve existing remote work if the repository has since appeared. Do not put ZIP artifacts in the source commit; attach them to the release.
+
+GitHub’s automatic source archives are not installable extension packages. Never substitute them for the release attachment.

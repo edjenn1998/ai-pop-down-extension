@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.ai-pop-down" path="/org/gnome/shell/extensions/ai-pop-down/">
+    <key name="connections" type="s"><default>'[{"id":"local","name":"This Computer","url":"http://localhost:11434","model":""}]'</default><summary>Named Ollama connections</summary></key>
+    <key name="selected-connection" type="s"><default>'local'</default><summary>Selected connection identity</summary></key>
+    <key name="popup-width" type="i"><default>520</default><range min="360" max="1200"/><summary>Popup width in logical pixels</summary></key>
+    <key name="popup-height" type="i"><default>620</default><range min="400" max="1400"/><summary>Popup height in logical pixels</summary></key>
+    <key name="persistent-history" type="b"><default>true</default><summary>Keep conversations on disk</summary></key>
+    <key name="toggle-shortcut" type="as"><default>[]</default><summary>Toggle chat popup</summary></key>
+  </schema>
+</schemalist>

@@ -1,0 +1,19 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+.ai-chat { spacing: 8px; padding: 6px; }
+.ai-row { spacing: 6px; }
+.ai-button { padding: 6px 10px; border-radius: 10px; }
+.ai-input { min-height: 52px; max-height: 96px; padding: 10px; }
+.ai-messages { spacing: 12px; padding: 4px 8px 8px 0; }
+.ai-message { spacing: 6px; padding: 12px; border-radius: 14px; }
+.ai-user { border-left: 2px solid -st-accent-color; }
+.ai-assistant { border: 1px solid st-transparentize(-st-accent-color, 0.7); }
+.ai-role, .ai-heading { font-weight: bold; }
+.ai-role { padding-top: 5px; }
+.ai-body { spacing: 8px; }
+.ai-code { font-family: monospace; padding: 8px; border-radius: 8px; background-color: st-transparentize(-st-accent-color, 0.92); }
+.ai-status, .ai-destination { font-size: 0.85em; }
+.ai-destination { padding-top: 4px; }
+.ai-welcome { font-weight: bold; font-size: 1.2em; padding-top: 18px; }
+.ai-chooser { max-height: 160px; }
+.ai-choices { spacing: 4px; }
+.ai-confirm { spacing: 6px; padding: 8px; border: 1px solid -st-accent-color; border-radius: 10px; }

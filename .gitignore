@@ -1,0 +1,10 @@
+dist/
+build/
+node_modules/
+schemas/gschemas.compiled
+*.shell-extension.zip
+.env
+.env.*
+*.log
+*~
+.DS_Store

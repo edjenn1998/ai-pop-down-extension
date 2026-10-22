@@ -1,0 +1,12 @@
+{
+  "name": "ai-pop-down-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "test": "node tests/run.js",
+    "lint": "eslint extension.js prefs.js lib tests",
+    "build": "python3 tools/package.py"
+  }
+}
