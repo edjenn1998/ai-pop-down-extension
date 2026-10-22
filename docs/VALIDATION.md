@@ -32,3 +32,11 @@ See [TESTING.md](TESTING.md) for the owner’s reproducible desktop checklist. *
 - Server origins only: no proxy paths, URL credentials or API-key proxy authentication. No direct provider auth, tools, rich HTML/tables, syntax highlighting or automatic model/service management.
 
 GitHub publishing requires the separate confirmation mandated by the owner’s local instructions; that confirmation was obtained before publication. No extensions.gnome.org submission is performed.
+
+## Composer mouse-focus patch
+
+The owner reported that Tab-focus allows typing and Ollama send/receive works, but clicking the input does not focus it. Source inspection against GNOME 51.1 found that St.Entry allocates a centered, natural-height Clutter.Text rather than filling the entry's padded/minimum-height surface. No extension pointer handler covered that extra area. PopupMenu's outside-click gesture rejects internal targets; its border/hint decorations do not cover the editor with a reactive overlay. Native Clutter.Text has its own click-positioning and selection gestures, which must not be replaced or consumed.
+
+The patch observes primary-button presses within the entry, focuses its editable Clutter.Text and always propagates the event. This covers the surrounding visible surface while leaving native text positioning/selection in charge. Initial popup focus now runs only on a successful closed-to-open transition, after `super.open()` has mapped the popup and performed its initial navigation; the former open-state signal fired too early. Streaming/render/copy paths do not refocus the composer. No deferred focus callback is introduced.
+
+The focused mouse/keyboard regression checks are listed in TESTING.md. This environment still lacks GJS/GNOME Shell, so this patch has source/static validation and a rebuilt ZIP, not a locally reproduced live-desktop result. The owner's reported send/receive success is user-provided evidence, not a test run here.

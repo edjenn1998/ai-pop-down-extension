@@ -2,7 +2,7 @@
 
 A native GNOME Shell chat dropdown for **Ollama**. Click the symbolic chat icon in the top bar to talk to a model without opening a browser or another application.
 
-**Initial target: GNOME Shell 51**, particularly CachyOS GNOME 51.1 / Wayland on the Dell XPS 13. This is a **0.1.0 preview**: the build environment had no GNOME Shell or GJS, so desktop operation has not yet been validated. See [validation](docs/VALIDATION.md) and the [manual test checklist](docs/TESTING.md) before everyday use or GNOME submission. No screenshots are included because none were genuinely captured.
+**Initial target: GNOME Shell 51**, particularly CachyOS GNOME 51.1 / Wayland on the Dell XPS 13. This is a **0.1.1 preview**: the build environment had no GNOME Shell or GJS, so desktop operation has not yet been validated here. See [validation](docs/VALIDATION.md) and the [manual test checklist](docs/TESTING.md) before everyday use or GNOME submission. No screenshots are included because none were genuinely captured.
 
 ## Install
 
@@ -68,5 +68,6 @@ Ollama can run inference on the configured server **or route cloud models to its
 - [Validation record](docs/VALIDATION.md)
 - [GNOME submission checklist](docs/SUBMISSION.md)
 - [0.1.0 release notes](docs/RELEASE-NOTES.md)
+- [0.1.1 mouse-focus fix](docs/RELEASE-NOTES-0.1.1.md)
 
 **License:** GPL-3.0-or-later; see [LICENSE](LICENSE) and [COPYING](COPYING). Website review/approval is not guaranteed. Maintainers must understand and verify the submitted code.
