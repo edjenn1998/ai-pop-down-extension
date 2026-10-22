@@ -1,6 +1,6 @@
 # Local and trusted-LAN Ollama
 
-The extension talks only to the configured **Ollama native API**, using `GET /api/tags`, `POST /api/show` and streaming `POST /api/chat`. It never pulls models or changes the server. These instructions are owner-performed configuration, not actions taken by the extension.
+Answer generation uses the configured **Ollama native API**, with `GET /api/tags`, `POST /api/show` and streaming `POST /api/chat`. Optional [web search](WEB-SEARCH.md) separately contacts Ollama's fixed hosted search/fetch endpoints with a Secret Service credential. It never pulls models or changes the server. These instructions are owner-performed configuration, not actions taken by the extension.
 
 ## This Computer
 
@@ -31,7 +31,7 @@ This is a native Soup client, not browser JavaScript. A wildcard `OLLAMA_ORIGINS
 
 ## Cloud models through the server
 
-The extension uses exactly the model names returned by **that server**, including cloud suffixes/tags. It does not call a provider directly or ask you for a provider API key. For Ollama cloud authentication errors, the server owner must sign in using Ollama’s own app/CLI (see the official FAQ, including `ollama signin`) under the appropriate server account. Server-side cloud usage limits/retirement can also prevent a request.
+The extension uses exactly the model names returned by **that server**, including cloud suffixes/tags. Generation does not call a provider directly or require a provider API key. The optional hosted search key is separate and does not authenticate the configured server. For Ollama cloud generation authentication errors, the server owner must sign in using Ollama’s own app/CLI (see the official FAQ, including `ollama signin`) under the appropriate server account. Server-side cloud usage limits/retirement can also prevent a request.
 
 Cloud models may send messages and images from your Ollama server to Ollama’s cloud. “Connected to localhost” does **not** imply local inference. The composer always states this distinction. Cloud authentication is never automatically opened, scraped or configured by the extension.
 

@@ -23,9 +23,12 @@ async function main() {
         const id = await store.addImage(prepared);
         store.reserved.clear();
         const c = {id: 'test', title: 'Test', connectionId: 'local', url: 'http://localhost:11434', model: 'm', updated: new Date().toISOString(),
-            messages: [{role: 'user', content: 'image', attachments: [id], state: 'complete'}]};
+            messages: [{role: 'user', content: 'image', attachments: [id], state: 'complete'},
+                {role: 'assistant', content: 'Answer [1]', state: 'complete', attachments: [],
+                    sources: [{id: 1, title: 'Source', url: 'https://example.org/news', coverage: 'excerpt'}]}]};
         await store.save([c]);
         assert((await store.load())[0].messages[0].attachments[0] === id, 'History persists image identity');
+        assert((await store.load())[0].messages[1].sources[0].url === 'https://example.org/news', 'History persists sources');
         const info = await new Promise((resolve, reject) => store.index.query_info_async('unix::mode', 0, 0, cancel, (file, result) => {
             try {
                 resolve(file.query_info_finish(result));

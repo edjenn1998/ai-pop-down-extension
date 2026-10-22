@@ -6,13 +6,15 @@ import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import {LIMITS, attachmentIds, buildRequest, connectionsFromJson, deleteConversation, selectContext, visionCapability} from './lib/core.js';
+import {LIMITS, attachmentIds, buildRequest, connectionsFromJson, deleteConversation, selectContext, sourceUrl, visionCapability} from './lib/core.js';
 import {clipboardImage, imageFromFile, prepareImage, requestImages} from './lib/images.js';
 import {removeFile} from './lib/io.js';
 import {OllamaClient} from './lib/ollama.js';
 import {Portals} from './lib/portal.js';
 import {HistoryStore} from './lib/storage.js';
 import {ChatView} from './lib/ui.js';
+import {WebSearchClient} from './lib/webSearch.js';
+import {searchQuery, webContext} from './lib/webCore.js';
 
 class ChatController {
     constructor(extension) {
@@ -22,6 +24,7 @@ class ChatController {
         this.cancel = new Gio.Cancellable();
         this.settings = extension.getSettings();
         this.client = new OllamaClient();
+        this.web = new WebSearchClient();
         this.portals = new Portals();
         this.store = new HistoryStore(this.cancel);
         this.sources = new Set();
@@ -44,6 +47,7 @@ class ChatController {
             send: () => this.run(() => this.send()),
             attach: kind => this.run(() => this.attach(kind)),
             open: () => this.view.size(this.settings),
+            source: url => this.run(() => this.openSource(url)),
         });
         this.changed = this.settings.connect('changed', (_settings, key) => {
             if (key === 'toggle-shortcut')
@@ -136,6 +140,7 @@ class ChatController {
             model: this.connection?.model ?? '', messages: []};
         this.attachments = [];
         this.view.entry.set_text('');
+        this.view.resetSearch();
         this.render();
     }
 
@@ -288,6 +293,8 @@ class ChatController {
                 action: () => this.run(() => { close(); return this.openConversation(c); }),
                 remove: () => this.view.confirm(`Delete “${c.title}” and its unreferenced images?`, () => this.run(async () => {
                     this.assertIdle();
+                    for (const message of c.messages)
+                        this.view.setRecovery(message);
                     this.conversations = deleteConversation(this.conversations, c.id).conversations;
                     const draft = this.drafts.get(c.id);
                     for (const id of draft?.attachments ?? [])
@@ -332,6 +339,7 @@ class ChatController {
         const draft = this.drafts.get(c.id);
         this.attachments = draft?.attachments ?? [];
         this.view.entry.set_text(draft?.text ?? '');
+        this.view.resetSearch();
         this.render();
         this.updateDestination();
         await this.refresh();
@@ -340,6 +348,7 @@ class ChatController {
     async deleteAll() {
         this.assertIdle();
         this.conversations = [];
+        this.view.recoveries.clear();
         this.drafts.clear();
         this.attachments = [];
         this.store.reserved.clear();
@@ -437,7 +446,21 @@ class ChatController {
         }
     }
 
-    async send(allowUnknown = false, allowMoved = false) {
+    async openSource(url) {
+        const safe = sourceUrl(url);
+        this.view.panel.menu.close();
+        await new Promise((resolve, reject) => {
+            Gio.AppInfo.launch_default_for_uri_async(safe, global.create_app_launch_context(0, -1), this.cancel, (_source, result) => {
+                try {
+                    resolve(Gio.AppInfo.launch_default_for_uri_finish(result));
+                } catch {
+                    reject(new Error('Could not open the source in your default browser.'));
+                }
+            });
+        });
+    }
+
+    async send(allowUnknown = false, allowMoved = false, search = null) {
         if (this.generation) {
             this.generation.stopped = true;
             this.generation.cancel.cancel();
@@ -445,18 +468,23 @@ class ChatController {
             return;
         }
         this.assertIdle();
+        // Snapshot the opt-in and explicit query before any confirmation or asynchronous work.
+        if (search === null)
+            search = {enabled: this.view.search.checked, query: this.view.query.get_text()};
         if (!this.connection || !this.models.some(m => m.name === this.selectedModel))
             throw new Error('Select an available model. Refresh to reconnect to Ollama.');
         if (this.current.url !== this.connection.url && this.current.messages.length && !allowMoved) {
             return this.view.confirm(`The endpoint changed from ${this.current.url} to ${this.connection.url}. Copy this chat to that server?`, () => this.run(async () => {
                 await this.openConversation(this.current, true);
                 if (this.alive)
-                    await this.send(allowUnknown, true);
+                    await this.send(allowUnknown, true, search);
             }));
         }
         const text = this.view.entry.get_text().trim();
         if (!text && !this.attachments.length)
             return;
+        if (search.enabled)
+            search = {...search, query: searchQuery(text, search.query)};
         if (this.current.messages.length + 2 > LIMITS.messages)
             throw new Error('This chat reached 200 messages. Start a new chat.');
         if (!this.conversations.includes(this.current) && this.conversations.length >= LIMITS.conversations)
@@ -468,10 +496,10 @@ class ChatController {
         if (hasImages && vision === false)
             throw new Error('This model reports no vision support. Remove images or choose a vision model for a new chat.');
         if (hasImages && vision === null && !allowUnknown)
-            return this.view.confirm('Vision capability is unknown because model discovery is unavailable. Explicitly attempt to send these images to the selected server/model?', () => this.run(() => this.send(true)));
+            return this.view.confirm('Vision capability is unknown because model discovery is unavailable. Explicitly attempt to send these images to the selected server/model?', () => this.run(() => this.send(true, false, search)));
         const assistant = {role: 'assistant', content: '', attachments: [], state: 'generating'};
-        const generation = {cancel: new Gio.Cancellable(), assistant, stopped: false, size: 0, source: 0, lastSave: Date.now()};
-        this.generation = generation;
+        const generation = {assistant, user, search, allowUnknown, context, allMessages: [...this.current.messages, user],
+            conversation: this.current, model: this.selectedModel, url: this.connection.url, info: this.info};
         this.current.model = this.selectedModel;
         this.current.url = this.connection.url;
         this.current.connectionId = this.connection.id;
@@ -486,15 +514,66 @@ class ChatController {
         this.drafts.delete(this.current.id);
         this.view.chooser.hide();
         this.render();
+        await this.generate(generation);
+    }
+
+    async retrySearch(previous, enabled) {
+        this.assertIdle();
+        if (this.current !== previous.conversation || !this.current.messages.includes(previous.assistant))
+            throw new Error('Open the original conversation before retrying this response.');
+        await this.generate({...previous, search: {...previous.search, enabled}});
+    }
+
+    async generate(generation) {
+        const {assistant, search} = generation;
+        this.discoveryCancel?.cancel();
+        this.discoveryId++;
+        generation.cancel = new Gio.Cancellable();
+        generation.stopped = false;
+        generation.size = 0;
+        generation.source = 0;
+        generation.lastSave = Date.now();
+        assistant.state = 'generating';
+        assistant.content = '';
+        delete assistant.sources;
+        assistant.webNote = !search.enabled && generation.searchAttempted ? 'Answered without web search at your request.' : '';
+        assistant.phase = search.enabled ? 'Searching the web…' : 'Generating answer…';
+        this.generation = generation;
+        this.view.setRecovery(assistant);
+        this.view.updateMessage(assistant);
         this.view.setBusy(true);
-        this.status(context.omitted ? `Older context omitted: sending ${context.messages.length} recent messages only.` : 'Waiting for Ollama (model loading can take several minutes)…');
+        let context = generation.context;
+        this.status(search.enabled ? 'Searching the web…' : context.omitted ? `Older context omitted: sending ${context.messages.length} recent messages only.` : 'Waiting for Ollama (model loading can take several minutes)…');
         this.run(() => this.persist());
+        let retrieving = search.enabled;
         try {
+            if (search.enabled) {
+                generation.searchAttempted = true;
+                const retrieval = await this.web.retrieve(search.query, generation.cancel, phase => {
+                    if (this.alive && this.generation === generation) {
+                        assistant.phase = phase;
+                        this.status(phase);
+                        this.view.updateMessage(assistant);
+                    }
+                });
+                if (!this.alive || generation.cancel.is_cancelled())
+                    throw new Error('Request stopped.');
+                const now = GLib.DateTime.new_now_local();
+                context = webContext(generation.allMessages, retrieval, `${now.format('%Y-%m-%d %H:%M:%S %z')} (${GLib.TimeZone.new_local().get_identifier()})`);
+                assistant.sources = context.sources;
+                assistant.webNote = retrieval.note;
+                retrieving = false;
+                assistant.phase = 'Generating answer…';
+                this.view.updateMessage(assistant);
+                this.status(`Generating answer…${retrieval.note ? ` ${retrieval.note}` : ''}${context.omitted ? ` ${context.omitted} older messages omitted from context.` : ''}`);
+            }
             const messages = await requestImages(this.store, context.messages, generation.cancel);
             if (!this.alive || generation.cancel.is_cancelled())
                 throw new Error('Request stopped.');
-            const request = buildRequest(this.current.model, messages, this.info, allowUnknown);
-            await this.client.request(this.current.url, '/api/chat', request, generation.cancel, record => {
+            if (context.system)
+                messages.unshift({role: 'system', content: context.system});
+            const request = buildRequest(generation.model, messages, generation.info, generation.allowUnknown);
+            await this.client.request(generation.url, '/api/chat', request, generation.cancel, record => {
                 if (!this.alive || this.generation !== generation)
                     return;
                 const content = record.message?.content ?? '';
@@ -520,10 +599,16 @@ class ChatController {
             if (!assistant.content && !generation.stopped)
                 throw new Error('The model returned no answer content. Separate thinking and tool calls are not displayed or executed.');
             assistant.state = generation.stopped ? 'interrupted' : 'complete';
-            this.status(context.omitted ? `Finished. ${context.omitted} older messages were omitted from context.` : 'Finished.');
+            this.status(`Finished.${context.omitted ? ` ${context.omitted} older messages were omitted from context.` : ''}${assistant.webNote ? ` ${assistant.webNote}` : ''}`);
         } catch (error) {
             assistant.state = generation.stopped || !this.alive ? 'interrupted' : 'failed';
             this.status(error.message);
+            if (retrieving && !generation.stopped && this.alive) {
+                assistant.webNote = 'Web search failed; no researched answer was generated. Retry explicitly or answer without web search.';
+                this.view.setRecovery(assistant,
+                    () => this.run(() => this.retrySearch(generation, true)),
+                    () => this.run(() => this.retrySearch(generation, false)));
+            }
         } finally {
             if (generation.source) {
                 GLib.Source.remove(generation.source);
@@ -571,6 +656,7 @@ class ChatController {
         this.cancel.cancel();
         this.discoveryCancel?.cancel();
         this.client.destroy();
+        this.web.destroy();
         this.portals.destroy();
         this.settings.disconnect(this.changed);
         Main.wm.removeKeybinding('toggle-shortcut');

@@ -4,6 +4,10 @@
 
 Only the selected Ollama server receives chat requests. Available models/capabilities are discovered with `/api/tags` and `/api/show`; lists are cached for 60 seconds, never polled. Refresh explicitly invalidates the relevant cache. Requests validate HTTPS certificates and refuse **all** HTTP redirects, including same-origin ones. URLs cannot contain credentials. No prompts, answers, image content or credentials are logged.
 
+Optional **Search Web** adds a separate hosted destination: only the current message or explicit query (≤1,000 characters) goes to `https://ollama.com/api/web_search`, and selected result URLs go to `/api/web_fetch`. Images, screenshots and conversation history are not sent to those APIs. Answers, augmented with bounded untrusted evidence, still use the configured Ollama server/model. Local inference does not make search local. Search defaults Off and no background searches occur. Check current provider account requirements, limits and possible costs. [Full data flow](WEB-SEARCH.md).
+
+The separate search key is stored only in the desktop Secret Service using libsecret, never GSettings, history, source files or plaintext fallback storage. The masked preferences entry is not prefilled and is cleared after actions. Missing/locked keyrings produce setup errors, not a silent fallback. Search credentials are sent only to fixed Ollama HTTPS endpoints; redirects and raw error-body/header logging are refused. Saved assistant messages can contain compact source titles, URLs, IDs and coverage notes, not complete downloaded pages or query overrides. Source links open in the default browser only after explicit clicks.
+
 Local inference, LAN inference and server-routed cloud inference are different. The extension cannot guarantee where an Ollama server ultimately runs a model. The UI warns that cloud models may transmit text/images beyond the server. HTTP on a LAN is plaintext on the network.
 
 There is no telemetry, analytics, advertising, clipboard watcher, executable download, model download or model tool execution.

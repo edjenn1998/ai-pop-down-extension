@@ -8,6 +8,7 @@ On a development machine with GJS:
 
 ```sh
 gjs -m tests/run.js
+gjs -m tests/web.js
 gjs -m tests/gjs-storage.js
 eslint extension.js prefs.js lib tests
 glib-compile-schemas --strict --dry-run schemas
@@ -45,6 +46,6 @@ Install the resulting file with `gnome-extensions install /absolute/path/to/zip`
 
 ## Release
 
-After passing the target desktop checklist, update the honest validation record. Inspect `git status`, `git diff`, recent commits, and staged files for secrets/artifacts. Create a public `edjenn1998/ai-pop-down-extension` repository only after owner confirmation. Commit intended source/docs/tests, push without force, then create **v0.1.0 as a prerelease** with the installable ZIP, SHA256SUMS and `docs/RELEASE-NOTES.md` as release notes. Preserve existing remote work if the repository has since appeared. Do not put ZIP artifacts in the source commit; attach them to the release.
+Update the honest validation record with actual automated/manual results. Inspect `git status`, `git diff`, recent commits, and staged files for secrets/artifacts; fetch and preserve remote work before pushing. After the separately required owner confirmation, commit intended source/docs/tests and push without force. Use a new versioned prerelease (currently **v0.2.0**) with the installable ZIP, SHA256SUMS and the matching release notes (`docs/RELEASE-NOTES-0.2.0.md`). Never overwrite an existing release artifact. Do not put ZIP artifacts in the source commit; attach them to the release. Live GNOME validation outstanding must remain explicit in prerelease notes.
 
 GitHub’s automatic source archives are not installable extension packages. Never substitute them for the release attachment.

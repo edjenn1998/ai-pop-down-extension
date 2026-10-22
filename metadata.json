@@ -1,7 +1,7 @@
 {
   "uuid": "ai-pop-down-extension@edjenn1998.github.io",
   "name": "AI Pop Down Extension",
-  "description": "Chat with your configured Ollama server in a native top-bar dropdown. Supports streaming, images, screenshots and local conversation history. Clipboard access is used only for explicit image paste and text/code copy actions. Cloud models served through Ollama may send text and images beyond your server.",
+  "description": "Chat with your selected local/LAN Ollama server/model in a native top-bar dropdown. Supports streaming, images and local history. Optional web search sends only your question or explicit query to Ollama’s hosted search service and selected page URLs to its fetch service; local inference does not make search local. Search requires a provider account/API key stored in Secret Service; check current limits and potential costs. Clipboard access is used for explicit image paste and text/code copy. Cloud models may send text and images beyond your server.",
   "shell-version": ["51"],
   "url": "https://github.com/edjenn1998/ai-pop-down-extension",
   "settings-schema": "org.gnome.shell.extensions.ai-pop-down"

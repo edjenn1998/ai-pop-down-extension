@@ -6,11 +6,14 @@ import Gtk from 'gi://Gtk?version=4.0';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {connectionsFromJson, normalizeUrl} from './lib/core.js';
 import {OllamaClient} from './lib/ollama.js';
+import {searchCredential} from './lib/credentials.js';
+import {WebSearchClient} from './lib/webSearch.js';
 
 export default class AiPopDownPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
         const client = new OllamaClient();
+        const web = new WebSearchClient();
         let alive = true;
         const cancels = new Set();
         window.connect('close-request', () => {
@@ -18,6 +21,8 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
             for (const cancel of cancels)
                 cancel.cancel();
             client.destroy();
+            web.destroy();
+            key.text = '';
             return false;
         });
         window.set_default_size(720, 760);
@@ -48,6 +53,55 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
         settings.bind('persistent-history', persistent, 'active', Gio.SettingsBindFlags.DEFAULT);
         privacy.add(persistent);
         page.add(privacy);
+        const search = new Adw.PreferencesGroup({title: 'Web Search', description:
+            'Optional hosted search by Ollama. Only your current question or explicit query (max 1,000 characters) goes to search; selected page URLs go to its fetch service. Answers still use your selected local/LAN Ollama model. Local inference does not make search local. An Ollama account/API key is required; check current account limits and potential costs. Credentials are stored only in Secret Service, separate from server connections.'});
+        const setup = new Adw.ActionRow({title: 'Ollama search API key', subtitle: 'Create a key and review current account terms and limits.'});
+        setup.add_suffix(new Gtk.LinkButton({label: 'API-key setup ↗', uri: 'https://ollama.com/settings/keys', valign: Gtk.Align.CENTER}));
+        search.add(setup);
+        const key = new Adw.PasswordEntryRow({title: 'New API key (not displayed or prefilled)'});
+        search.add(key);
+        const keyStatus = new Adw.ActionRow({title: 'Search not tested', subtitle: 'Test Search uses the saved key and makes one hosted query; it may count against your provider quota.'});
+        const saveKey = new Gtk.Button({label: 'Save / Replace', valign: Gtk.Align.CENTER});
+        const removeKey = new Gtk.Button({label: 'Remove', valign: Gtk.Align.CENTER});
+        const testSearch = new Gtk.Button({label: 'Test Search', valign: Gtk.Align.CENTER});
+        for (const button of [saveKey, removeKey, testSearch])
+            keyStatus.add_suffix(button);
+        search.add(keyStatus);
+        page.add(search);
+        const keyAction = async action => {
+            const cancel = new Gio.Cancellable();
+            cancels.add(cancel);
+            for (const button of [saveKey, removeKey, testSearch])
+                button.sensitive = false;
+            keyStatus.title = action === 'test' ? 'Searching the web…' : 'Accessing Secret Service…';
+            try {
+                if (action === 'test') {
+                    const result = await web.retrieve('Ollama web search', cancel, () => {}, false);
+                    if (alive)
+                        keyStatus.title = `Search authenticated — ${result.sources.length} results`;
+                } else {
+                    const result = await searchCredential(action, cancel, action === 'save' ? key.text.trim() : '');
+                    if (alive) {
+                        key.text = '';
+                        keyStatus.title = action === 'save' ? 'Search key saved in Secret Service'
+                            : result ? 'Search key removed' : 'No unlocked key removed. Unlock your login keyring and retry if a key remains.';
+                    }
+                }
+            } catch (error) {
+                if (alive)
+                    keyStatus.title = error.message;
+            } finally {
+                cancels.delete(cancel);
+                if (alive) {
+                    key.text = '';
+                    for (const button of [saveKey, removeKey, testSearch])
+                        button.sensitive = true;
+                }
+            }
+        };
+        saveKey.connect('clicked', () => keyAction('save'));
+        removeKey.connect('clicked', () => keyAction('remove'));
+        testSearch.connect('clicked', () => keyAction('test'));
         const help = new Adw.PreferencesGroup({title: 'Ollama connections',
             description: 'Ollama must already be running. For EVO-X2, obtain its actual trusted LAN address and add http://<actual-address>:11434. HTTP LAN traffic is not encrypted. Cloud models require server-side Ollama sign-in; no provider API key is used here.'});
         const add = new Gtk.Button({label: 'Add Connection', halign: Gtk.Align.END});

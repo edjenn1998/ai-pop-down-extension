@@ -13,6 +13,8 @@
 
 `gjs -m tests/gjs-storage.js` additionally exercises actual Gio storage/image I/O. Run lint, strict schema validation and the packaging audit in [BUILDING.md](BUILDING.md). Pure logic/static checks do not prove the extension runs in GNOME.
 
+`gjs -m tests/web.js` (or development-only `node tests/web.js`) adds 14 asynchronous groups: fixed request schemas/credential placement, sanitized auth/rate/redirect errors, explicit query limits, URL/source metadata validation, malformed/empty data, actual retrieval scheduler concurrency/page/result limits, excerpt fallback, simulated request timeout/deadline/cancellation behavior, the actual shared bounded reader including cancellation after a read completes, untrusted/bounded evidence context, citation-ID mapping, source-history round trips and unchanged ordinary request construction. These use injected provider responses/control state: no real account or paid requests, no claims of live Soup/keyring/timer/UI coverage.
+
 ## Owner’s target desktop checklist
 
 Use CachyOS GNOME **51.1 / Wayland**, ideally the Dell XPS 13, with a disposable test conversation and benign images. Prefer an isolated nested GNOME session if already available; do not restart the active desktop to test. Record GNOME/GJS/Soup/portal versions and failures without sharing private chat content.
@@ -43,3 +45,17 @@ Use CachyOS GNOME **51.1 / Wayland**, ideally the Dell XPS 13, with a disposable
 - [ ] Lock screen: no chat UI, tooltip or capture data remains visible. Unlock/re-enable has no stale operations.
 
 After real captures, optionally add screenshots to source docs only, with consent and no private chat content. Do not invent mock screenshots or put docs/screenshots in the extension ZIP.
+
+## Web Search — target desktop and live service
+
+- [ ] With no saved key, normal chat/attachments/history work with Search Web Off. New Chat, model/server switching and reopening a saved conversation reset search Off. Popup close/reopen alone preserves the draft/toggle and running retrieval.
+- [ ] Preferences setup link opens only on click; key entry is masked, never prefilled and cleared after actions/close. Save a key, replace it, Test Search (explicit hosted query), Remove, then test that search reports missing credentials. Check Secret Service item/schema and that no GSettings/history/repository file contains the key.
+- [ ] Locked/unavailable keyring, missing Secret introspection, prompt cancellation, invalid key, HTTP 401/403/429, Retry-After, network/TLS/redirect/timeout, malformed and empty responses give clear errors with no raw credentials logged/displayed. Save/Remove/Test cancellation on preferences close is clean.
+- [ ] Ask one current-information question with search On. Verify progress order, selected local/LAN generation destination and exact hosted request bodies: only the current/override query and result URLs, never screenshots, image base64 or prior turns. A follow-up override uses the explicit edited query without model rewrite.
+- [ ] Verify five results maximum, three fetches maximum, two concurrent fetches maximum, 15-second per-request / 45-second overall deadlines, and incremental 256/512 KiB limits using a controlled test environment. A failed fetch uses excerpts and says so. A failed search does not generate an answer until explicit retry/fallback.
+- [ ] Retry or Answer without web search reuses the original question once, captured destination/model and multimodal context; a newer draft survives. Fallback is visibly labeled. No automatic retries or background searches occur.
+- [ ] Close during search/fetch: operation continues. Stop during key lookup, search, both concurrent fetches and generation; disable/re-enable during each stage. All requests/timers/callbacks settle without stale UI updates or mixed destinations.
+- [ ] Valid inline `[1]` clicks and keyboard-focusable Sources buttons open actual metadata URLs, unknown `[99]`, code blocks, malformed URLs and model-generated links do not. Clicking/drag-selecting/copying normal response text retains native behavior and never refocuses the composer. No surprise browser opening during drag.
+- [ ] Sources titles/URLs/IDs/coverage survive closing/reopening and logout/restart. Complete page bodies, override queries and credentials are absent from history. Later requests do not replay previous downloaded pages or duplicate the current user/image turn. Malformed saved source metadata is handled like corrupt history.
+- [ ] Long/hostile page text, embedded role markers/instructions, missing publication dates and long questions remain bounded and separated from the original user request. Omitted older context and excerpt-only coverage are disclosed. Citations are not presented as a correctness guarantee.
+- [ ] Native light/dark/high-contrast themes, scaling/small monitors, Search Web toggle state, query focus/tab navigation and all existing composer-focus checks remain usable. No Gtk/Gdk/Adw in Shell, no Shell UI imports in preferences, no separate runtime/service or installation step.
