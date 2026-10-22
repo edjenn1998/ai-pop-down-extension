@@ -1,3 +1,4 @@
+<img width="742" height="931" alt="Screenshot From 2026-10-22 18-46-21" src="https://github.com/user-attachments/assets/c97f23b8-68b5-4344-ba60-e5c9c1b0daa9" />
 # AI Pop Down Extension
 
 Chat with Ollama from a small dropdown in your GNOME top bar. For example: click the chat icon, select a model, type **“Help me write a short email”**, and press **Send**. The answer appears in the dropdown as it is generated.
