@@ -46,4 +46,12 @@ for doc in [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]:
         if not re.match(r"[a-z]+://|#", link):
             assert (doc.parent / link.split("#")[0]).exists(), (doc, link)
 assert (ROOT / "COPYING").read_bytes() == Path("/usr/share/common-licenses/GPL-3").read_bytes() if Path("/usr/share/common-licenses/GPL-3").exists() else True
+readme = (ROOT / "README.md").read_text()
+blocks = re.findall(r"```sh\n(.*?)\n\s*```", readme, re.DOTALL)
+for block in blocks:
+    # Parse only: never install extensions, contact a LAN host or change services/firewalls.
+    subprocess.run(["bash", "-n"], input=block, text=True, check=True)
+    for command in re.findall(r"gnome-extensions (?:enable|disable|prefs|uninstall) (\S+)", block):
+        assert command == metadata["uuid"], command
+print(f"PASS: syntax of {len(blocks)} README shell blocks and extension command UUIDs (commands not executed)")
 print("PASS: Shell/preferences import boundaries, syntax, source headers, metadata/schema, local documentation links and GPL text")

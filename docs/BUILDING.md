@@ -46,6 +46,6 @@ Install the resulting file with `gnome-extensions install /absolute/path/to/zip`
 
 ## Release
 
-Update the honest validation record with actual automated/manual results. Inspect `git status`, `git diff`, recent commits, and staged files for secrets/artifacts; fetch and preserve remote work before pushing. After the separately required owner confirmation, commit intended source/docs/tests and push without force. Use a new versioned prerelease (currently **v0.2.0**) with the installable ZIP, SHA256SUMS and the matching release notes (`docs/RELEASE-NOTES-0.2.0.md`). Never overwrite an existing release artifact. Do not put ZIP artifacts in the source commit; attach them to the release. Live GNOME validation outstanding must remain explicit in prerelease notes.
+Update the honest validation record with actual automated/manual results. Inspect `git status`, `git diff`, recent commits, and staged files for secrets/artifacts; fetch and preserve remote work before pushing. After the separately required owner confirmation, commit intended source/docs/tests and push without force. Use a new versioned prerelease (currently **v0.2.1**) with the installable ZIP, SHA256SUMS and the matching release notes (`docs/RELEASE-NOTES-0.2.1.md`). Never overwrite an existing release artifact. Do not put ZIP artifacts in the source commit; attach them to the release. Live GNOME validation outstanding must remain explicit in prerelease notes.
 
 GitHub’s automatic source archives are not installable extension packages. Never substitute them for the release attachment.

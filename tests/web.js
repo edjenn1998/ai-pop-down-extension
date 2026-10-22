@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import {LIMITS, buildRequest, parseHistory, serializeHistory, sourceMetadata, sourceUrl} from '../lib/core.js';
 import {readChunks} from '../lib/bytes.js';
-import {WEB, citationSource, parseFetch, parseSearch, retrieveSources, searchHttpError, searchQuery, searchRequest, webContext} from '../lib/webCore.js';
+import {WEB, citationSource, parseFetch, parseSearch, retrieveSources, searchHttpError, searchQuery, searchRequest, sourceSummary, webContext} from '../lib/webCore.js';
 
 let count = 0;
 function assert(value, message = 'Assertion failed') {
@@ -178,6 +178,27 @@ async function main() {
             {model: 'model:tag', stream: true, messages: [{role: 'user', content: 'Hello', images: ['abc']}]});
         const answer = {role: 'assistant', content: 'previous answer', sources: parseSearch(results), webNote: 'excerpts', system: 'old evidence'};
         equal(buildRequest('m', [answer], null).messages, [{role: 'assistant', content: 'previous answer'}]);
+    });
+    await test('Compact source summaries preserve IDs and domains without exposing URL paths, query data or excerpts', async () => {
+        const source = {id: 3, title: '  A useful   title  ', url: 'https://EXAMPLE.org:8443/a/very/long/path?private=query#section', coverage: 'excerpt', text: 'Do not display this excerpt'};
+        equal(sourceSummary(source), {id: 3, domain: 'example.org', title: 'A useful title'});
+        equal(sourceSummary({...source, title: ''}).title, 'example.org');
+        equal(sourceSummary({...source, title: source.url}).title, 'example.org');
+        equal(sourceSummary({...source, url: 'http://[::1]:11434/page'}).domain, '[::1]');
+        await rejects(() => sourceSummary({...source, url: 'javascript:alert(1)'}));
+    });
+    await test('History retains long source metadata but not per-answer disclosure state; independent citations survive reload', () => {
+        const sources = parseSearch(results);
+        sources[0].title = 'Long title '.repeat(18).trim();
+        const message = {role: 'assistant', content: 'Answer [1] and [2]', state: 'complete', attachments: [],
+            sources, sourcesExpanded: true, sourceList: {visible: true}};
+        const c = {id: 'disclosure', title: 'Question', url: 'http://localhost:11434', connectionId: 'local', model: 'm', updated: '2026-10-22', messages: [user, message]};
+        const text = serializeHistory([c]);
+        assert(!text.includes('sourcesExpanded') && !text.includes('sourceList') && !text.includes('visible'));
+        const restored = parseHistory(text)[0].messages[1];
+        equal(restored.sources[0].title, sources[0].title);
+        equal(citationSource(restored.content, restored.content.indexOf('[2]') + 1, restored.sources).id, 2);
+        equal(message.sources.length, 5);
     });
     console.log(`Passed ${count} web test groups.`);
 }

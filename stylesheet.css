@@ -17,3 +17,7 @@
 .ai-chooser { max-height: 160px; }
 .ai-choices { spacing: 4px; }
 .ai-confirm { spacing: 6px; padding: 8px; border: 1px solid -st-accent-color; border-radius: 10px; }
+.ai-sources-toggle { padding: 4px 6px; font-size: 0.9em; }
+.ai-source-list { spacing: 3px; }
+.ai-source-link { padding: 4px 6px; border-radius: 6px; text-align: left; }
+.ai-source-title { max-height: 2.6em; }

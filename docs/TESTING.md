@@ -59,3 +59,14 @@ After real captures, optionally add screenshots to source docs only, with consen
 - [ ] Sources titles/URLs/IDs/coverage survive closing/reopening and logout/restart. Complete page bodies, override queries and credentials are absent from history. Later requests do not replay previous downloaded pages or duplicate the current user/image turn. Malformed saved source metadata is handled like corrupt history.
 - [ ] Long/hostile page text, embedded role markers/instructions, missing publication dates and long questions remain bounded and separated from the original user request. Omitted older context and excerpt-only coverage are disclosed. Citations are not presented as a correctness guarantee.
 - [ ] Native light/dark/high-contrast themes, scaling/small monitors, Search Web toggle state, query focus/tab navigation and all existing composer-focus checks remain usable. No Gtk/Gdk/Adw in Shell, no Shell UI imports in preferences, no separate runtime/service or installation step.
+
+## Compact Sources — v0.2.1 focused desktop checks
+
+- [ ] A fresh researched answer shows only **Sources (N) ▸**, with no expanded rows or page/excerpt evidence blocks. The answer is fully visible. Ordinary answers without sources have no disclosure; search-failure/fallback notices still appear.
+- [ ] Mouse click and Tab → Enter/Space expand/collapse only that answer. The arrow and accessible expanded/collapsed state agree; Tab reaches source links only while expanded. Collapsing a focused list leaves focus on its disclosure, never the composer.
+- [ ] Close/reopen with collapsed lists: still collapsed. Close/reopen after expanding: reset to collapsed. Reload saved conversations and disable/re-enable: sources retained, always initially collapsed. Multiple answers' disclosures are independent.
+- [ ] Test 1 and 5 sources, empty/URL-only titles, long/unbroken titles and long domains at 100%/200%/fractional scaling and on a narrow monitor. Titles wrap/ellipsize; no raw URL paths, large cards, descriptions or downloaded page text stretch the popup. IDs still match inline references.
+- [ ] While scrolled up and while near the bottom, expand/collapse with and without another response streaming. No forced bottom jump; the scroll value stays anchored except natural clamping when content shrinks. Use Jump to latest to resume following.
+- [ ] Valid inline citations still open actual sources on click without changing other lists. Source links open validated URLs; selection/copy and composer focus remain normal. Disable immediately after toggling: no leftover stage callbacks or errors.
+
+Portable tests add compact source formatting/URL safety and source-history preservation without disclosure state. `tools/check.py` parses every root README shell block with `bash -n` and verifies UUIDs; it never executes setup commands. Native widget behavior and desktop/service setup are not proved by these static/logic checks.
