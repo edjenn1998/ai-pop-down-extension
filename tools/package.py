@@ -25,25 +25,17 @@ with tempfile.TemporaryDirectory(prefix="ai-pop-down-build-") as temp:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / name, target)
     subprocess.run(["glib-compile-schemas", "--strict", str(stage / "schemas")], check=True)
-    if shutil.which("gnome-extensions"):
-        subprocess.run(["gnome-extensions", "pack", "--force", "--out-dir", str(DIST),
-                        "--extra-source", "lib", "--extra-source", "icons",
-                        "--extra-source", "LICENSE", "--extra-source", "COPYING", str(stage)], check=True)
-        print("Packaged with gnome-extensions pack")
-    else:
-        with zipfile.ZipFile(DEST, "w", zipfile.ZIP_DEFLATED) as archive:
-            for path in sorted(stage.rglob("*")):
-                if path.is_file():
-                    info = zipfile.ZipInfo(str(path.relative_to(stage)), (2026, 1, 1, 0, 0, 0))
-                    info.external_attr = 0o100644 << 16
-                    info.compress_type = zipfile.ZIP_DEFLATED
-                    archive.writestr(info, path.read_bytes())
-        print("gnome-extensions unavailable: used standard ZIP format with compiled schema")
+    with zipfile.ZipFile(DEST, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name in FILES:
+            info = zipfile.ZipInfo(name, (2026, 1, 1, 0, 0, 0))
+            info.external_attr = 0o100644 << 16
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, (stage / name).read_bytes())
 
 with zipfile.ZipFile(DEST) as archive:
     assert archive.testzip() is None, "ZIP checksum failed"
     names = set(archive.namelist())
-    expected = set(FILES) | {"schemas/gschemas.compiled"}
+    expected = set(FILES)
     assert names == expected, f"Unexpected package contents: {names ^ expected}"
     metadata = json.loads(archive.read("metadata.json"))
     assert metadata["uuid"] == UUID and metadata["shell-version"] == ["51"]

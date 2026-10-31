@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Generated with AI for personal use.
+// Do NOT upload to extensions.gnome.org (EGO) unless you understand JavaScript
+// and can maintain this code.
 import Adw from 'gi://Adw?version=1';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -14,10 +17,10 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
         const settings = this.getSettings();
         const client = new OllamaClient();
         const web = new WebSearchClient();
-        let alive = true;
+        const windowCancel = new Gio.Cancellable();
         const cancels = new Set();
         window.connect('close-request', () => {
-            alive = false;
+            windowCancel.cancel();
             for (const cancel of cancels)
                 cancel.cancel();
             client.destroy();
@@ -48,13 +51,19 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
         appearance.add(shortcut);
         page.add(appearance);
         const privacy = new Adw.PreferencesGroup({title: 'History and privacy',
-            description: 'History is plaintext, not encrypted, in $XDG_DATA_HOME/ai-pop-down-extension (normally ~/.local/share/ai-pop-down-extension). Use the dropdown’s History menu to delete conversations or all history. Clipboard access only follows explicit paste/copy actions. Cloud models can transmit text and images beyond your Ollama server.'});
-        const persistent = new Adw.SwitchRow({title: 'Persistent conversation history', subtitle: 'Turning off removes saved chats; this session remains in memory. Temporary images are cleaned on the next enable.'});
+            description: 'History is plaintext, not encrypted, in $XDG_DATA_HOME/ai-pop-down-extension (normally ~/.local/share/ai-pop-down-extension). ' +
+                'Use the dropdown’s History menu to delete conversations or all history. Clipboard access only follows explicit paste/copy actions. ' +
+                'Cloud models can transmit text and images beyond your Ollama server.'});
+        const persistent = new Adw.SwitchRow({title: 'Persistent conversation history',
+            subtitle: 'Turning off removes saved chats; this session remains in memory. Temporary images are cleaned on the next enable.'});
         settings.bind('persistent-history', persistent, 'active', Gio.SettingsBindFlags.DEFAULT);
         privacy.add(persistent);
         page.add(privacy);
         const search = new Adw.PreferencesGroup({title: 'Web Search', description:
-            'Optional hosted search by Ollama. Only your current question or explicit query (max 1,000 characters) goes to search; selected page URLs go to its fetch service. Answers still use your selected local/LAN Ollama model. Local inference does not make search local. An Ollama account/API key is required; check current account limits and potential costs. Credentials are stored only in Secret Service, separate from server connections.'});
+            'Optional hosted search by Ollama. Only your current question or explicit query (max 1,000 characters) goes to search; ' +
+            'selected page URLs go to its fetch service. Answers still use your selected local/LAN Ollama model. Local inference does not make search local. ' +
+            'An Ollama account/API key is required; check current account limits and potential costs. ' +
+            'Credentials are stored only in Secret Service, separate from server connections.'});
         const setup = new Adw.ActionRow({title: 'Ollama search API key', subtitle: 'Create a key and review current account terms and limits.'});
         setup.add_suffix(new Gtk.LinkButton({label: 'API-key setup ↗', uri: 'https://ollama.com/settings/keys', valign: Gtk.Align.CENTER}));
         search.add(setup);
@@ -77,22 +86,22 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
             try {
                 if (action === 'test') {
                     const result = await web.retrieve('Ollama web search', cancel, () => {}, false);
-                    if (alive)
+                    if (!windowCancel.is_cancelled())
                         keyStatus.title = `Search authenticated — ${result.sources.length} results`;
                 } else {
                     const result = await searchCredential(action, cancel, action === 'save' ? key.text.trim() : '');
-                    if (alive) {
+                    if (!windowCancel.is_cancelled()) {
                         key.text = '';
                         keyStatus.title = action === 'save' ? 'Search key saved in Secret Service'
                             : result ? 'Search key removed' : 'No unlocked key removed. Unlock your login keyring and retry if a key remains.';
                     }
                 }
             } catch (error) {
-                if (alive)
+                if (!windowCancel.is_cancelled())
                     keyStatus.title = error.message;
             } finally {
                 cancels.delete(cancel);
-                if (alive) {
+                if (!windowCancel.is_cancelled()) {
                     key.text = '';
                     for (const button of [saveKey, removeKey, testSearch])
                         button.sensitive = true;
@@ -103,7 +112,8 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
         removeKey.connect('clicked', () => keyAction('remove'));
         testSearch.connect('clicked', () => keyAction('test'));
         const help = new Adw.PreferencesGroup({title: 'Ollama connections',
-            description: 'Ollama must already be running. For EVO-X2, obtain its actual trusted LAN address and add http://<actual-address>:11434. HTTP LAN traffic is not encrypted. Cloud models require server-side Ollama sign-in; no provider API key is used here.'});
+            description: 'Ollama must already be running. For EVO-X2, obtain its actual trusted LAN address and add http://<actual-address>:11434. ' +
+                'HTTP LAN traffic is not encrypted. Cloud models require server-side Ollama sign-in; no provider API key is used here.'});
         const add = new Gtk.Button({label: 'Add Connection', halign: Gtk.Align.END});
         const addRow = new Adw.ActionRow({title: 'Named servers', subtitle: 'Connection/model changes start a new chat; existing chats keep their destination.'});
         addRow.add_suffix(add);
@@ -119,6 +129,7 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
         const groups = new Map();
         const save = () => settings.set_string('connections', JSON.stringify(connections));
         const addGroup = connection => {
+            const connectionCancels = new Set();
             const group = new Adw.PreferencesGroup({title: connection.name});
             const name = new Adw.EntryRow({title: 'Display name', text: connection.name});
             const url = new Adw.EntryRow({title: 'Server base URL (HTTP or HTTPS origin)', text: connection.url});
@@ -157,7 +168,7 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
                         dialog.add_response('save', 'Change destination');
                         dialog.set_response_appearance('save', Adw.ResponseAppearance.SUGGESTED);
                         dialog.connect('response', (_dialog, response) => {
-                            if (alive && response === 'save')
+                            if (!windowCancel.is_cancelled() && response === 'save')
                                 commit();
                         });
                         dialog.present(window);
@@ -171,18 +182,20 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
             test.connect('clicked', async () => {
                 const cancel = new Gio.Cancellable();
                 cancels.add(cancel);
+                connectionCancels.add(cancel);
                 test.sensitive = false;
                 status.title = 'Connecting…';
                 try {
                     const models = await client.models(normalizeUrl(url.text), cancel, true);
-                    if (alive)
+                    if (!windowCancel.is_cancelled() && !cancel.is_cancelled())
                         status.title = `Connected — ${models.length} model${models.length === 1 ? '' : 's'} available`;
                 } catch (error) {
-                    if (alive)
+                    if (!windowCancel.is_cancelled() && !cancel.is_cancelled())
                         status.title = error.message;
                 } finally {
                     cancels.delete(cancel);
-                    if (alive)
+                    connectionCancels.delete(cancel);
+                    if (!windowCancel.is_cancelled() && !cancel.is_cancelled())
                         test.sensitive = true;
                 }
             });
@@ -192,9 +205,11 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
                 dialog.add_response('remove', 'Remove');
                 dialog.set_response_appearance('remove', Adw.ResponseAppearance.DESTRUCTIVE);
                 dialog.connect('response', (_dialog, response) => {
-                    if (!alive || response !== 'remove')
+                    if (windowCancel.is_cancelled() || response !== 'remove')
                         return;
                     connections = connections.filter(c => c.id !== connection.id);
+                    for (const cancel of connectionCancels)
+                        cancel.cancel();
                     save();
                     page.remove(group);
                     groups.delete(connection.id);

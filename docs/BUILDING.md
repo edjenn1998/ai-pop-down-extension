@@ -31,7 +31,7 @@ The development-only packager needs Python 3’s standard library and `glib-comp
 python3 tools/package.py
 ```
 
-If `gnome-extensions` is available, it invokes **`gnome-extensions pack`** with the runtime asset directories. Otherwise it produces the equivalent root-layout ZIP with Python’s standard `zipfile`, after compiling the schema. Python is not included in or needed by the installed extension.
+The packager produces a root-layout ZIP with Python’s standard `zipfile`, after strictly compiling the schema in temporary staging for validation. Only the schema XML is shipped: modern GNOME extension installation compiles it on the destination system. Python is not included in or needed by the installed extension.
 
 Output:
 
@@ -40,7 +40,7 @@ dist/ai-pop-down-extension@edjenn1998.github.io.shell-extension.zip
 dist/SHA256SUMS
 ```
 
-The builder validates checksums, UUID, shell-version, clipboard description, absence of website-managed version/session fields and **exact ZIP contents**. Runtime files only: metadata, extension, preferences, stylesheet, lib modules, icon, schema XML/compiled schema and license texts. No tests, docs, build scripts, package.json, caches, local settings, screenshots or source archives enter the ZIP. The XML remains included for GNOME review.
+The builder validates checksums, UUID, shell-version, clipboard description, absence of website-managed version/session fields and **exact ZIP contents**. Runtime files only: metadata, extension, preferences, stylesheet, lib modules, icon, schema XML and license texts. No tests, docs, build scripts, package.json, compiled schemas, caches, local settings, screenshots or source archives enter the ZIP.
 
 Install the resulting file with `gnome-extensions install /absolute/path/to/zip`. This is separate from building: do not install into or restart someone’s active desktop without permission. For updates, use the Extensions UI or an explicit owner-approved force-reinstall, not a silent script.
 

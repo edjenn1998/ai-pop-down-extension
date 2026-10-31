@@ -5,7 +5,7 @@
   "type": "module",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "test": "node tests/run.js && node tests/web.js",
+    "test": "node tests/run.js && node tests/web.js && node --test tests/*.test.js",
     "lint": "eslint extension.js prefs.js lib tests",
     "build": "python3 tools/package.py"
   }
