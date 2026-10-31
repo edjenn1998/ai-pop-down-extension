@@ -4,7 +4,7 @@ Consulted during implementation on 2026-10-22. This documents the APIs actually 
 
 ## GNOME / GJS
 
-- [Current extension review guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html): initialization, disable cleanup, library/process boundaries, clipboard metadata disclosure, scripts, readable source and packaging. AI-assisted submissions still require maintainer understanding.
+- [Current extension review guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html): initialization, disable cleanup, library/process boundaries, clipboard metadata disclosure, scripts, readable source and packaging.
 - [GNOME Shell 51 porting](https://gjs.guide/extensions/upgrading/gnome-shell-51.html): removed St `vertical`, new `orientation`, PopupMenu parameter objects, synchronous disable, KeyController and `get_key`/`get_state`.
 - GNOME Shell **51.1** official source: [panelMenu.js](https://github.com/GNOME/gnome-shell/blob/51.1/js/ui/panelMenu.js), [popupMenu.js](https://github.com/GNOME/gnome-shell/blob/51.1/js/ui/popupMenu.js), [layout.js](https://github.com/GNOME/gnome-shell/blob/51.1/js/ui/layout.js), [st-scroll-view.h](https://github.com/GNOME/gnome-shell/blob/51.1/src/st/st-scroll-view.h). Verified monitor/workarea lookup, menu behavior, text-arrow handling, scroll adjustment getters and modern child APIs.
 - [St clipboard source](https://github.com/GNOME/gnome-shell/blob/51.1/src/st/st-clipboard.h): explicit `set_text`; no image watching.

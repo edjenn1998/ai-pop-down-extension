@@ -31,4 +31,4 @@ The builder cannot prove that St allocation, focus, GObject introspection marsha
 
 The extension has no syntax highlighting, table/HTML rendering, model-generated link launching, tools, direct cloud-provider generation auth, automatic model management, encrypted history or token tokenizer. Version 0.2 adds only explicit validated retrieved-source links. Per-chat drafts survive switching only for the current enable session. GNOME screenshot v2 does not force a target; the owner chooses Selection. Re-encoded PNG transparency is lost.
 
-AI assistance is a development aid, not evidence of correctness or grounds for automatic website approval. A maintainer should be able to explain the data flow, clipboard declaration, endpoint binding, async teardown, byte parser, image bounds and ZIP contents before submitting.
+A maintainer should be able to explain the data flow, clipboard declaration, endpoint binding, async teardown, byte parser, image bounds and ZIP contents before submitting.
