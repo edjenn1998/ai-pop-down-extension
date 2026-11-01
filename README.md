@@ -8,7 +8,7 @@ This extension is an **Ollama client**. It does not contain an AI model, install
 - **Chat:** your chosen Ollama server and model generate the answer. The server can be this computer or another computer on your home network.
 - **Optional web search:** Ollama's hosted search service supplies recent information, then your chosen model writes the answer. Search has a separate API key and is off by default.
 
-**v0.2.1 is a prerelease for GNOME Shell 51.** Chat and web search have been reported working by the owner. The build environment has no GNOME Shell/GJS, so the new source-disclosure behavior still needs desktop testing. See [validation details](docs/VALIDATION.md). No fabricated screenshots are used.
+**v0.2.2 is a maintenance prerelease for GNOME Shell 51.** The owner reports that the extension works as expected. Automated checks cover the lifecycle and packaging repairs; the build environment has no GNOME Shell/GJS. See [validation details](docs/VALIDATION.md).
 
 ## Start here
 
@@ -366,7 +366,7 @@ That resets connection profiles and appearance preferences; it does **not** dele
 
 ## More information
 
-- [Current release notes](docs/RELEASE-NOTES-0.2.1.md)
+- [Current release notes](docs/RELEASE-NOTES-0.2.2.md)
 - [Build and package](docs/BUILDING.md) — development tools only, not needed by extension users
 - [Maintainer architecture walkthrough](docs/MAINTAINER.md)
 - [Verified API and setup references](docs/API-REFERENCES.md)

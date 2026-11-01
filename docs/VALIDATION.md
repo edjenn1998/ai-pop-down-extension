@@ -1,5 +1,17 @@
 # Validation record — v0.1.0 preview
 
+## v0.2.2 maintenance update — 2026-11-01
+
+The maintainer reports that all extensions work as expected on the target desktop.
+Fresh automated validation passes 18 core groups, 16 web groups and two transport
+regression tests, runtime/test lint, strict schema compilation, syntax/import
+isolation, metadata/license/documentation checks and package-content validation.
+The maintenance package ships schema XML without compiled output and includes the
+separate chat controller. GJS/GNOME Shell remain unavailable in the build
+environment; desktop results are maintainer-reported, not reproduced there.
+
+## Historical preview record
+
 Date: 2026-10-22. Build environment: Linux, Node.js v22.22.1, ESLint v6.4.0, GLib schema compiler and Python 3 available. **No GJS, GNOME Shell, gnome-extensions CLI or isolated nested GNOME session was available.** No packages were installed, no active desktop extension was installed/enabled and no desktop session was restarted.
 
 ## Checks run
