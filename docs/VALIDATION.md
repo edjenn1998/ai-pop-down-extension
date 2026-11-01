@@ -1,4 +1,16 @@
-# Validation record — v0.1.0 preview
+# Validation record
+
+## v0.2.3 review cleanup — 2026-11-01
+
+- Removed GI import version suffixes, simplified HTTP error handling and directory
+  setup, and extracted conversation deletion from the chooser callback.
+- Fixed a late chooser update when the extension is disabled during a deletion save.
+- Passed 18 core groups, 16 web groups and four transport/controller regression tests,
+  plus lint, source/import checks, strict schema compilation and package validation.
+- The rebuilt ZIP has zero Shexli errors and warnings. Its one `EGO-A-005`
+  manual-review item covers the declared clipboard copy function.
+- GJS and GNOME Shell are unavailable here; native desktop checks remain in
+  [TESTING.md](TESTING.md).
 
 ## v0.2.2 maintenance update — 2026-11-01
 

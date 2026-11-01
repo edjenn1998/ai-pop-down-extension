@@ -21,7 +21,7 @@ npm test
 npm run lint
 ```
 
-The GJS storage/image integration tests require GJS, Gio and GdkPixbuf. They operate in a temporary test directory, not the owner’s extension data. They check actual atomic private writes, round trips, corruption preservation, attachment cleanup and image decoding/re-encoding. They were **not runnable** in the initial build environment.
+The GJS storage/image integration tests require GJS, Gio and GdkPixbuf. They use a temporary directory and check private atomic writes, history round trips, corruption preservation, attachment cleanup and image decoding/re-encoding. See [VALIDATION.md](VALIDATION.md) for results and unavailable checks.
 
 ## Build
 
@@ -42,10 +42,10 @@ dist/SHA256SUMS
 
 The builder validates checksums, UUID, shell-version, clipboard description, absence of website-managed version/session fields and **exact ZIP contents**. Runtime files only: metadata, extension, preferences, stylesheet, lib modules, icon, schema XML and license texts. No tests, docs, build scripts, package.json, compiled schemas, caches, local settings, screenshots or source archives enter the ZIP.
 
-Install the resulting file with `gnome-extensions install /absolute/path/to/zip`. This is separate from building: do not install into or restart someone’s active desktop without permission. For updates, use the Extensions UI or an explicit owner-approved force-reinstall, not a silent script.
+Install with `gnome-extensions install /absolute/path/to/zip`; add `--force` for an update. Log out and back in on Wayland to reload changed JavaScript.
 
 ## Release
 
-Update the honest validation record with actual automated/manual results. Inspect `git status`, `git diff`, recent commits, and staged files for secrets/artifacts; fetch and preserve remote work before pushing. After the separately required owner confirmation, commit intended source/docs/tests and push without force. Use a new versioned prerelease (currently **v0.2.2**) with the installable ZIP, SHA256SUMS and the matching release notes (`docs/RELEASE-NOTES-0.2.2.md`). Never overwrite an existing release artifact. Do not put ZIP artifacts in the source commit; attach them to the release. Distinguish maintainer-reported desktop testing from checks performed in the build environment.
+Update the version and release notes, record the checks performed, and tag the matching source commit. Create a regular GitHub release with the installable ZIP and `SHA256SUMS` as assets. Keep generated archives out of source commits and retain earlier release assets.
 
 GitHub’s automatic source archives are not installable extension packages. Never substitute them for the release attachment.

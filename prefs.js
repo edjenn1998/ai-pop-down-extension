@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import Adw from 'gi://Adw?version=1';
+import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import Gtk from 'gi://Gtk?version=4.0';
+import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {connectionsFromJson, normalizeUrl} from './lib/core.js';
 import {OllamaClient} from './lib/ollama.js';
@@ -109,7 +109,7 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
         removeKey.connect('clicked', () => keyAction('remove'));
         testSearch.connect('clicked', () => keyAction('test'));
         const help = new Adw.PreferencesGroup({title: 'Ollama connections',
-            description: 'Ollama must already be running. For EVO-X2, obtain its actual trusted LAN address and add http://<actual-address>:11434. ' +
+            description: 'Ollama must already be running. For another computer, use its LAN address and port 11434. ' +
                 'HTTP LAN traffic is not encrypted. Cloud models require server-side Ollama sign-in; no provider API key is used here.'});
         const add = new Gtk.Button({label: 'Add Connection', halign: Gtk.Align.END});
         const addRow = new Adw.ActionRow({title: 'Named servers', subtitle: 'Connection/model changes start a new chat; existing chats keep their destination.'});
@@ -123,7 +123,6 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
             connections = [];
             window.add_toast(new Adw.Toast({title: error.message}));
         }
-        const groups = new Map();
         const save = () => settings.set_string('connections', JSON.stringify(connections));
         const addGroup = connection => {
             const connectionCancels = new Set();
@@ -143,7 +142,6 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
             status.add_suffix(remove);
             group.add(status);
             page.add(group);
-            groups.set(connection.id, group);
             apply.connect('clicked', () => {
                 try {
                     if (!name.text.trim())
@@ -209,7 +207,6 @@ export default class AiPopDownPreferences extends ExtensionPreferences {
                         cancel.cancel();
                     save();
                     page.remove(group);
-                    groups.delete(connection.id);
                 });
                 dialog.present(window);
             });

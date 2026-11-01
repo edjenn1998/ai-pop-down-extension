@@ -1,34 +1,86 @@
-# Maintainer walkthrough
+# Architecture and lifecycle
 
-Read these modules in order. All source is readable ES modules; there are no bundled dependencies, generated runtime JavaScript, subprocesses or helper daemons.
+The extension has two entry points: `extension.js` runs inside GNOME Shell;
+`prefs.js` runs in the separate GTK4/libadwaita preferences process. Shared modules
+use Gio, GLib and Soup, without importing either process's UI libraries.
 
-1. **`extension.js`** owns one enable-session controller. It constructs widgets, settings, HTTP and portal clients only from `enable()`. The extension’s `disable()` is synchronous. Every asynchronous path checks the controller’s `alive` flag, and discovery also uses a monotonically increasing request ID. A new enable creates a different controller: old completions cannot update it. Generation captures its own cancellable/message. Switching requires it to settle first, including during attachment loading before HTTP begins.
-2. **`lib/ui.js`** uses PanelMenu’s standard PopupMenu/BoxPointer, St containers, buttons, scroll views and a multiline St.Entry. Escape/outside dismissal and panel menu grabs belong to GNOME. It subclasses PanelMenu only to let text actors keep Left/Right caret navigation instead of switching top-bar menus. Size calculations use the icon’s actual monitor and Shell theme scale. Streaming updates are plain selectable text at most 10 times/second; Markdown is rendered once at completion to reduce layout churn. Content never enters Pango markup without escaping. More than 200 Markdown blocks fall back to one plain-text widget.
-3. **`lib/core.js`** is platform-independent logic. In particular, NDJSON accumulates **bytes**, finds newline bytes and decodes complete lines with fatal UTF-8 validation. GJS TextDecoder explicitly does not implement `stream: true`; relying on browser behavior would fail. Each line/wire/answer has a bound; missing `done` is failure. Untrusted error text is displayed as text, not markup.
-4. **`lib/ollama.js`** uses Soup 3 `send_async` plus Gio async stream reads. Socket establishment has a 10-second deadline, replaced at established/starting with 15-second discovery or a 10-minute generation deadline (including slow model loading). The latter is a total operation deadline, not an inactivity timer. Cancellation works before headers and during reads. Streams close in `finally`; destroy cancels operations, removes their timers, aborts the session and clears caches. All redirects are refused so POST content cannot be silently replayed to a new origin. No TLS acceptance override, logging feature, API key or implicit Ollama control endpoint exists.
-5. **`lib/images.js`** uses actual PNG/JPEG headers for dimensions before decode, then GdkPixbuf’s **asynchronous** scaled stream loader. The decoder validates content, not the extension or MIME label. Sources are bounded at 10 MiB / 40 MP / 32,768 per side. Rotation touches only the already-scaled result (≤2048² pixels); JPEG encode uses `save_to_streamv_async`. Input/output streams close even on cancellation. Source metadata is not copied. Mutter selection transfer’s explicit byte bound avoids an unbounded St clipboard read. No Gtk/Gdk/Adw is imported into Shell.
-6. **`lib/portal.js`** subscribes to the predictable token request path **before** issuing a portal call, then closes/unsubscribes on cancellation or disable. It uses verified `(ssa{sv})` FileChooser and `(sa{sv})` Screenshot signatures. An empty parent handle is correct for Shell, which has no exported GTK app window. Interactive screenshot v2 lets the owner choose Selection. A 5-minute request timeout closes abandoned dialogs. Screenshots are never auto-sent.
-7. **`lib/storage.js` / `lib/io.js`** use bounded async file reads, private atomic replacement with owned GLib.Bytes, private directories, serialized writes, index-before-GC ordering and safe filename validation. The controller coalesces writes. New image reservations stop overlapping save cleanup from removing just-added images. Corruption locks persistence until an explicit reset. The last committed partial response survives crashes; `generating` is recovered as interrupted. A disabled session cancels writes safely; it never synchronously waits for disk.
-8. **`prefs.js`** runs in GNOME’s separate GTK4/libadwaita process. Its shared imports are only pure logic, Soup and Gio helpers; none imports St, Shell, Clutter or Meta. Connection IDs remain stable when editing. URL changes explain the destination boundary; chat reuse has its own confirmation. Test Connection only lists models. Preference-window close cancels its requests.
-9. **`lib/webCore.js` / `lib/webSearch.js`** separate the portable retrieval scheduler/schema/context logic from Soup/Gio transport. Search/fetch use only fixed HTTPS endpoints with no redirects, one opt-in query, five results, three page requests and two workers. Fifteen-second per-request and 45-second retrieval scopes own cancellables, timers and parent signal IDs; destroy cancels/disconnects/removes them. Errors never echo raw provider bodies or transport details. Page failures retain excerpts; search failures create explicit retry/fallback actions on the same assistant response. Each generation captures its connection/model/query/context. Retrying does not append the user again or clear a newer draft. Evidence uses up to 12,000 characters within the existing total context budget and is never persisted/replayed as source bodies.
-10. **`lib/credentials.js`** lazily imports Secret 1 and uses verified async Schema/password lookup/store/clear APIs, creating schemas only at runtime. It is shared by Shell/preferences without crossing UI-library boundaries. No search-Off path loads the keyring. The schema's attributes contain only a purpose name, never the credential. Static finish functions are invoked on Secret, not the callback's source object. Preference actions clear the masked field and cancel on close. No plaintext fallback or server-auth mutation exists.
-11. **Sources and context**: `core.js` validates/whitelists optional saved source metadata. `ui.js` builds independent source buttons from that metadata and only recognizes inline IDs present in the actual source map. Citation click gestures cannot cancel native text gestures; native drags may cancel citation clicks. URI launch uses the async Gio desktop API with the enable-session cancellable. Fenced code/model-generated URLs are not launched. `lib/bytes.js` holds the shared portable bounded-read loop used by real Gio file and network reads, enabling byte-limit and late-cancellation tests without duplicating transport logic.
+## Ownership
 
-## Review lifecycle checklist
+`extension.js` owns one `ChatController` per enable session. The controller owns
+the chat view, settings connection, shortcut, clients, portal requests and history
+store. `destroy()` cancels requests, removes sources and keybindings, disconnects
+settings and destroys the view.
 
-- No runtime GObjects, signals or main-loop sources are created during module initialization or the Extension constructor. Class registration and immutable/static data are the only module-level definitions.
-- `disable()` cancels HTTP, file and clipboard operations; closes portal requests; removes extension-owned sources and keybindings; disconnects settings; destroys popup, entry, tooltip and children; clears in-memory collections. Streams finish closing asynchronously without touching UI.
-- No `unlock-dialog` session mode is declared. GNOME disables the extension on lock; the chat UI is destroyed rather than retained there.
-- No user content is logged. Error strings are bounded where provided by the server. Model tools/code/links are not executed. Thinking chunks are discarded; where the model advertises `false`, thinking is explicitly disabled. Thinking-only models may still reason server-side; only a restrained status appears.
+Asynchronous work checks the session cancellable before updating widgets. Model
+discovery also checks its request ID so an older result cannot replace a newer
+selection. Each generation captures its own destination, model, context and
+cancellable. Switching conversations waits for generation or image selection to
+finish.
 
-## Important limits and follow-up testing
+| Module | Responsibility |
+| --- | --- |
+| `chatController.js` | Chat state, drafts, sending, search and save scheduling |
+| `ui.js` | Panel popup, composer, messages, sources and clipboard copy buttons |
+| `core.js` | URL validation, NDJSON, context selection, Markdown and history format |
+| `ollama.js` | Streaming HTTP requests and model-discovery cache |
+| `webCore.js` / `webSearch.js` | Retrieval scheduling, evidence context and hosted HTTP transport |
+| `credentials.js` | Lazy libsecret access for the search API key |
+| `images.js` | Bounded image loading, resizing, encoding and clipboard image transfer |
+| `portal.js` | File chooser and interactive screenshot requests |
+| `storage.js` / `io.js` / `bytes.js` | Serialized saves, attachment cleanup and bounded asynchronous I/O |
 
-**Source disclosures (v0.2.1):** `ui.js` keeps the disclosure, arrow and hidden list on each rendered message row. No view expansion flag enters history. A changed source fingerprint builds the list collapsed; popup close collapses any expanded rows. Native St.Button activation supplies mouse/Enter/Space behavior, with ATK `EXPANDABLE` and `EXPANDED` states. Titles use word/character wrapping, bounded height and ellipsization; `sourceSummary()` validates metadata and derives a hostname without paths/query strings. No source bodies are rendered—retrieved evidence still exists only in the transient system context.
+## Streaming and cancellation
 
-Disclosure browsing sets streaming follow false and captures the adjustment value. Adjustment notifications preserve that anchor until a one-shot Stage `prepare-frame` callback, after layout, restores the bounded value and disconnects itself. It is also disconnected on conversation rerender and disable; the menu callback is disconnected before UI destruction so teardown cannot create another stage handler. Shrinking below the old scroll value necessarily clamps to the new maximum. No scroll-to-bottom or composer focus is requested by expansion/collapse. Inline citation handling is unchanged and still opens the validated URL directly.
+NDJSON is buffered as bytes and decoded one complete line at a time. GJS's
+`TextDecoder` does not support streaming decode, so decoding arbitrary network
+chunks would break split UTF-8 characters. The parser requires a final `done`
+record and enforces record and wire-size limits.
 
-The builder cannot prove that St allocation, focus, GObject introspection marshaling and portal/backend behavior work on the owner’s desktop. Run `tests/gjs-storage.js` and the full manual checklist on the target GNOME 51.1 machine. Test cancellation while atomic writes/decoders are pending, and inspect journald for actual extension errors without posting private chat content.
+Ollama requests have a ten-second connection timeout, followed by fifteen seconds
+for discovery or ten minutes for generation. Those are total operation deadlines,
+not inactivity timers. Streams close in `finally`; client teardown cancels the
+requests, removes their timers and aborts the Soup session.
 
-The extension has no syntax highlighting, table/HTML rendering, model-generated link launching, tools, direct cloud-provider generation auth, automatic model management, encrypted history or token tokenizer. Version 0.2 adds only explicit validated retrieved-source links. Per-chat drafts survive switching only for the current enable session. GNOME screenshot v2 does not force a target; the owner chooses Selection. Re-encoded PNG transparency is lost.
+Search uses fixed Ollama HTTPS endpoints, with separate credentials and deadlines.
+Two workers fetch at most three pages from up to five results. Failed page fetches
+retain search excerpts; a failed search offers explicit retry or fallback on the
+same response. See [WEB-SEARCH.md](WEB-SEARCH.md).
 
-A maintainer should be able to explain the data flow, clipboard declaration, endpoint binding, async teardown, byte parser, image bounds and ZIP contents before submitting.
+## Widgets and focus
+
+The view uses PanelMenu, PopupMenu and St widgets. The menu owns its child actors;
+the tooltip is owned separately in `Main.uiGroup`. Teardown disconnects the menu,
+scroll-adjustment and one-shot stage handlers before destroying widgets.
+
+The indicator lets editable text keep Left/Right navigation. Primary-button
+events on the composer focus its text actor and propagate, preserving native
+cursor positioning and selection. Initial focus is set after the popup opens.
+Streaming and copy actions do not move focus.
+
+Streaming text updates at most ten times per second. Completed responses render
+escaped basic Markdown, falling back to plain text above 200 blocks. Source lists
+start collapsed. Opening a list pauses auto-follow and restores the scroll anchor
+after layout; disclosure state is not saved in history.
+
+## Storage and images
+
+History writes are queued and coalesced. Each save commits the index before
+collecting unused attachments. Newly prepared images are reserved so an overlapping
+save cannot delete them. Corrupt history is preserved read-only until reset.
+
+The session cancels writes on disable rather than blocking Shell to flush them.
+The last committed partial answer survives; saved `generating` states become
+`interrupted` when loaded. Temporary-image deletion can finish after the UI is gone.
+
+Image headers are checked before asynchronous scaled decoding. Rotation and JPEG
+encoding operate on the resized image. Clipboard paste uses Mutter's bounded
+selection transfer. Copy buttons write text through St's clipboard; both uses are
+declared in the extension description.
+
+Portal requests subscribe to their token-specific response path before issuing
+the D-Bus call. Timeout or disable closes the request and removes its subscription.
+The screenshot portal is interactive: choose **Selection** to capture a region.
+
+See [PRIVACY.md](PRIVACY.md) for storage paths and limits,
+[API-REFERENCES.md](API-REFERENCES.md) for API links, and
+[TESTING.md](TESTING.md) for desktop checks.

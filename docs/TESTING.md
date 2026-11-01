@@ -13,11 +13,11 @@
 
 `gjs -m tests/gjs-storage.js` additionally exercises actual Gio storage/image I/O. Run lint, strict schema validation and the packaging audit in [BUILDING.md](BUILDING.md). Pure logic/static checks do not prove the extension runs in GNOME.
 
-`gjs -m tests/web.js` (or development-only `node tests/web.js`) adds 14 asynchronous groups: fixed request schemas/credential placement, sanitized auth/rate/redirect errors, explicit query limits, URL/source metadata validation, malformed/empty data, actual retrieval scheduler concurrency/page/result limits, excerpt fallback, simulated request timeout/deadline/cancellation behavior, the actual shared bounded reader including cancellation after a read completes, untrusted/bounded evidence context, citation-ID mapping, source-history round trips and unchanged ordinary request construction. These use injected provider responses/control state: no real account or paid requests, no claims of live Soup/keyring/timer/UI coverage.
+`gjs -m tests/web.js` (or `node tests/web.js`) covers 16 asynchronous groups: request schemas, credential placement, query limits, source validation, retrieval concurrency, excerpt fallback, deadlines, cancellation, bounded evidence, citations and source-history round trips. Tests use injected provider responses without contacting the hosted service.
 
-## Owner’s target desktop checklist
+## GNOME desktop checks
 
-Use CachyOS GNOME **51.1 / Wayland**, ideally the Dell XPS 13, with a disposable test conversation and benign images. Prefer an isolated nested GNOME session if already available; do not restart the active desktop to test. Record GNOME/GJS/Soup/portal versions and failures without sharing private chat content.
+Use GNOME **51 / Wayland** with a test conversation and sample images. Record GNOME/GJS/Soup/portal versions alongside any failures.
 
 - [ ] Install the single ZIP using `gnome-extensions install`. First-enable icon, popup and preferences load without journal errors.
 - [ ] Enable/disable 10 times, including while history loads. No duplicate icons, keybindings, tooltips, sources or exceptions.
@@ -44,7 +44,7 @@ Use CachyOS GNOME **51.1 / Wayland**, ideally the Dell XPS 13, with a disposable
 - [ ] Default light/dark Shell themes, high contrast, custom theme, 100%/200%/fractional scaling, small display, large font, multiple monitors and hotplug: popup stays within workarea, entry/buttons remain reachable, no horizontal overflow.
 - [ ] Lock screen: no chat UI, tooltip or capture data remains visible. Unlock/re-enable has no stale operations.
 
-After real captures, optionally add screenshots to source docs only, with consent and no private chat content. Do not invent mock screenshots or put docs/screenshots in the extension ZIP.
+Keep screenshots free of private chat content and credentials. Screenshots belong in project documentation, outside the extension ZIP.
 
 ## Web Search — target desktop and live service
 

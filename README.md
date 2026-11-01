@@ -8,7 +8,7 @@ This extension is an **Ollama client**. It does not contain an AI model, install
 - **Chat:** your chosen Ollama server and model generate the answer. The server can be this computer or another computer on your home network.
 - **Optional web search:** Ollama's hosted search service supplies recent information, then your chosen model writes the answer. Search has a separate API key and is off by default.
 
-**v0.2.2 is a maintenance prerelease for GNOME Shell 51.** The owner reports that the extension works as expected. Automated checks cover the lifecycle and packaging repairs; the build environment has no GNOME Shell/GJS. See [validation details](docs/VALIDATION.md).
+Requires **GNOME Shell 51**. See [release notes](docs/RELEASE-NOTES-0.2.3.md) and the [validation record](docs/VALIDATION.md).
 
 ## Start here
 
@@ -36,14 +36,14 @@ To check the GNOME version, run this in a terminal **on the GNOME computer**:
 gnome-shell --version
 ```
 
-Commands below say where to run them. Commands beginning with `sudo` change the specified computer's system configuration and may ask for your administrator password. Do not run server commands on the laptop unless it is also your Ollama server.
+Run server commands on the computer running Ollama, which may be different from your GNOME computer.
 
 ## Install the extension
 
 Do this **on the GNOME computer**, logged into your normal desktop account, without `sudo`.
 
 1. Open the project's [Releases page](https://github.com/edjenn1998/ai-pop-down-extension/releases).
-2. Open the newest suitable prerelease and expand **Assets**. Download exactly:
+2. Open the latest release and expand **Assets**. Download:
 
    **`ai-pop-down-extension@edjenn1998.github.io.shell-extension.zip`**
 
@@ -54,7 +54,7 @@ Do this **on the GNOME computer**, logged into your normal desktop account, with
    gnome-extensions install "$HOME/Downloads/ai-pop-down-extension@edjenn1998.github.io.shell-extension.zip"
    ```
 
-   If you saved it elsewhere, replace the quoted path with that file's actual path. Keep quotes around paths with spaces.
+   Adjust the path if you saved the ZIP elsewhere.
 4. **Log out and log back in** if GNOME does not discover the new extension. On Wayland, logout/login is also the reliable way to load changed extension code; the `Alt+F2`, `r` Shell restart method is not available there. Save your work before logging out.
 5. Enable the extension:
 
@@ -62,7 +62,7 @@ Do this **on the GNOME computer**, logged into your normal desktop account, with
    gnome-extensions enable ai-pop-down-extension@edjenn1998.github.io
    ```
 
-   If the GNOME **Extensions** application is installed, you can instead find **AI Pop Down Extension** there after installation and switch it on. The command above is the installation-independent way to enable it; simply opening the ZIP in an archive manager does not install it.
+   You can also enable **AI Pop Down Extension** in GNOME's **Extensions** app.
 6. Open its settings:
 
    ```sh
@@ -71,7 +71,7 @@ Do this **on the GNOME computer**, logged into your normal desktop account, with
 
    You can also click the chat icon in the top bar and then the **Preferences** gear button. Hover over icon buttons to read their tooltips.
 
-The UUID in these commands is the extension's identifier. These releases are distributed through GitHub; the project has not been submitted to extensions.gnome.org.
+The UUID in these commands identifies the extension. GitHub releases include the installable ZIP; the current GNOME submission is on the [review page](https://extensions.gnome.org/review/77529).
 
 ## Path 1: Ollama on the same computer
 
@@ -93,7 +93,7 @@ Test the HTTP connection, also on this computer:
 curl --connect-timeout 5 --max-time 15 http://localhost:11434/api/tags
 ```
 
-**Success looks like JSON containing a `models` array.** `{"models":[]}` means the server is reachable but has no models available. You do not need to post this output or any chat content publicly.
+Expect JSON containing a `models` array. `{"models":[]}` means the server is reachable but has no models available.
 
 If you use the **Linux systemd Ollama service**, check it with:
 
@@ -139,7 +139,7 @@ ip -4 route
 
 `hostname -I` may show several addresses. Use the address of the server's active **home Ethernet or Wi-Fi interface**, as confirmed by network settings, the router's device list and `ip` output. Physical interface names often start with `en` or `wl`. Do not choose an address attached only to `docker0`, a Docker `br-…` bridge, loopback or an unrelated VPN. Do not choose purely by the numbers: some real LANs also use addresses starting with `172`.
 
-**Example only — replace with your real output:** if the server has `192.168.1.50` on Ethernet and `172.17.0.1` on `docker0`, use `192.168.1.50`. A router **DHCP reservation** can keep the server's LAN address stable after reboots.
+For example, if the server has `192.168.1.50` on Ethernet and `172.17.0.1` on `docker0`, use `192.168.1.50`. A router **DHCP reservation** can keep its address stable.
 
 On the **server**, set a terminal variable for later tests. This value is an **example only; replace it before running**:
 
@@ -169,7 +169,7 @@ On the **server**:
 sudo systemctl edit ollama.service
 ```
 
-The editor opens a service override. **Keep any existing settings and override files.** Add the following setting under `[Service]`, or change only the existing `OLLAMA_HOST` assignment if one is already present. Do not replace the whole file, use `--full`, or clear other environment settings.
+Add or update `OLLAMA_HOST` under `[Service]`, keeping any unrelated settings in the override.
 
 This address is an **example only; replace it inside the editor** with the server's actual LAN address. Shell variables such as `$SERVER_IP` are not substituted in this setting:
 
@@ -186,7 +186,7 @@ sudo systemctl restart ollama.service
 ss -ltn 'sport = :11434'
 ```
 
-Confirm it now listens on the real LAN address. Binding specifically to that address avoids listening on every interface. It may no longer accept `localhost` connections on the server itself; use its LAN address for the next tests. If another existing override wins, adjust that `OLLAMA_HOST` assignment rather than deleting unrelated overrides.
+Confirm it listens on the LAN address. Binding to that address avoids listening on every interface, but may stop `localhost` connections; use the LAN address for subsequent tests.
 
 ### 4. Allow access through the server's firewall
 
@@ -366,10 +366,10 @@ That resets connection profiles and appearance preferences; it does **not** dele
 
 ## More information
 
-- [Current release notes](docs/RELEASE-NOTES-0.2.2.md)
+- [Current release notes](docs/RELEASE-NOTES-0.2.3.md)
 - [Build and package](docs/BUILDING.md) — development tools only, not needed by extension users
-- [Maintainer architecture walkthrough](docs/MAINTAINER.md)
-- [Verified API and setup references](docs/API-REFERENCES.md)
+- [Architecture and lifecycle](docs/MAINTAINER.md)
+- [API and setup references](docs/API-REFERENCES.md)
 - [Automated validation and outstanding desktop checks](docs/VALIDATION.md)
 - [Manual testing checklist](docs/TESTING.md)
 - [GNOME submission checklist](docs/SUBMISSION.md)

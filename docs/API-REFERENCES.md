@@ -1,6 +1,6 @@
-# Official API evidence
+# API references
 
-Consulted during implementation on 2026-10-22. This documents the APIs actually used, not a claim of live runtime validation. Sources were read before implementation and rechecked as code was refined.
+References for the GNOME 51 APIs, desktop portals and Ollama endpoints used by the extension. Test results are recorded in [VALIDATION.md](VALIDATION.md).
 
 ## GNOME / GJS
 
@@ -33,7 +33,6 @@ Consulted during implementation on 2026-10-22. This documents the APIs actually 
 
 ## Optional web search (v0.2)
 
-- Re-read [current review rules](https://gjs.guide/extensions/review-guidelines/review-guidelines.html), including no runtime module initialization, cancel/cleanup, process import boundaries and clipboard disclosure.
 - [Official hosted search/fetch documentation](https://docs.ollama.com/capabilities/web-search): fixed POST HTTPS endpoints `https://ollama.com/api/web_search` (`query`, `max_results`) and `/api/web_fetch` (`url`), bearer API-key authentication, account requirement, search result `title/url/content`, fetch `title/content/links`. No publication-date field is documented. [Errors](https://docs.ollama.com/api/errors) documents HTTP 429 for rate limits; no automatic retry is implemented.
 - [libsecret JavaScript examples](https://gnome.pages.gitlab.gnome.org/libsecret/libsecret-js-examples.html), [Schema](https://gnome.pages.gitlab.gnome.org/libsecret/struct.Schema.html), [lookup](https://gnome.pages.gitlab.gnome.org/libsecret/func.password_lookup.html), [store](https://gnome.pages.gitlab.gnome.org/libsecret/func.password_store.html), [clear](https://gnome.pages.gitlab.gnome.org/libsecret/func.password_clear.html): language-binding dictionary attributes, async callbacks/static finish functions, default collection, replacement of matching entries, and unlocked-only deletion. Schemas/attributes do not store key material. No GTK/Shell UI imports occur in the shared credential module.
 - [Adw.PasswordEntryRow](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1-latest/class.PasswordEntryRow.html): masked GTK4 preference entry, no secret prefill.
